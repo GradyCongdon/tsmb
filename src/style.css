@@ -1,0 +1,15 @@
+.footer {
+    position: fixed;
+    bottom: 0;
+    height: 40px;
+    display: flex;
+}
+
+.fab {
+    position: fixed;
+    bottom: 0;
+    border-radius: 50%;
+    background-color: blue;
+    color: white;
+
+}
