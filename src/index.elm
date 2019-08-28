@@ -6,13 +6,19 @@ import Time
 import Task
 import Debug
 
-main = Browser.sandbox{ init = init, update = update, view = view}
+main = Browser.element
+  { init = init
+  , update = update
+  , subscriptions = subscriptions
+  , view = view
+  }
 
-type alias Model = {
-  draft: String,
-  time: Time.Posix,
-  count: Int,
-  posts: List Post
+type alias Model =
+  { draft: String
+  , posts: List Post
+  , count: Int
+  , time: Time.Posix
+  , zone: Time.Zone
   }
 
 type alias Post = {
@@ -22,29 +28,26 @@ type alias Post = {
   favorite: Bool
   }
 
-emptyPost : Post
-emptyPost = {
-    time = Time.millisToPosix 0
-  , count = 0
-  , text = "hi"
-  , favorite = False
-  }
-
-init : Model
-init = {
-    draft = ""
-  , count = 1
-  , time = Time.millisToPosix 0
-  , posts = [emptyPost]
-  }
-
-
 type Msg
     = Draft String
     | Send
     | Tick Time.Posix
+    | AdjustTimeZone Time.Zone
 
-update : Msg -> Model -> Model
+
+init : () -> (Model, Cmd Msg)
+init _ =
+  ({
+      draft = ""
+    , posts = [emptyPost]
+    , count = 1
+    , time = Time.millisToPosix 0
+    , zone = Time.utc
+    }
+    , Task.perform AdjustTimeZone Time.here
+  )
+
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         Send ->
@@ -57,15 +60,25 @@ update msg model =
                   , favorite = False
                   }
               in
-                { model | posts = post :: model.posts, draft = "", count = model.count + 1 }
+                (
+                  { model | posts = post :: model.posts, draft = "", count = model.count + 1 }
+                  , Cmd.none
+                )
             else
-              model
+              (model , Cmd.none)
 
         Draft draft ->
-            { model | draft = draft }
+            ({ model | draft = draft }, Cmd.none)
 
         Tick time ->
-            { model | time = time }
+            ({ model | time = time }, Cmd.none)
+
+        AdjustTimeZone zone ->
+            ({ model | zone = zone }, Cmd.none)
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Time.every 1000 Tick
 
 
 
@@ -83,6 +96,7 @@ view model =
             ]
         ]
 
+
 prettyTime : Time.Posix -> String
 prettyTime time = time |> Time.posixToMillis |> String.fromInt
 
@@ -98,3 +112,12 @@ renderPosts posts =
           ]
         ]) |> div [class "posts"]
 
+
+
+emptyPost : Post
+emptyPost = {
+    time = Time.millisToPosix 0
+  , count = 0
+  , text = "hi"
+  , favorite = False
+  }
