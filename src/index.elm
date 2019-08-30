@@ -16,7 +16,9 @@ main = Browser.element
 type alias Model =
   { draft: String
   , posts: List Post
+  , dark : Bool
   , count: Int
+  , height: Int
   , time: Time.Posix
   , zone: Time.Zone
   }
@@ -28,17 +30,13 @@ type alias Post = {
   favorite: Bool
   }
 
-type Msg
-    = Draft String
-    | Send
-    | Tick Time.Posix
-    | AdjustTimeZone Time.Zone
-
 
 init : () -> (Model, Cmd Msg)
 init _ =
   ({
       draft = ""
+    , height = 0
+    , dark = False
     , posts = [emptyPost]
     , count = 1
     , time = Time.millisToPosix 0
@@ -46,6 +44,14 @@ init _ =
     }
     , Task.perform AdjustTimeZone Time.here
   )
+
+type Msg
+    = Draft String
+    | Send
+    | Tick Time.Posix
+    | AdjustTimeZone Time.Zone
+    | DarkMode
+
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -61,20 +67,23 @@ update msg model =
                   }
               in
                 (
-                  { model | posts = post :: model.posts, draft = "", count = model.count + 1 }
+                  { model | posts = post :: model.posts, draft = "", count = model.count + 1, height = 0 }
                   , Cmd.none
                 )
             else
               (model , Cmd.none)
 
         Draft draft ->
-            ({ model | draft = draft }, Cmd.none)
+            ({ model | draft = draft, height = String.length draft }, Cmd.none)
 
         Tick time ->
             ({ model | time = time }, Cmd.none)
 
         AdjustTimeZone zone ->
             ({ model | zone = zone }, Cmd.none)
+
+        DarkMode ->
+            ({ model | dark = not model.dark}, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -84,31 +93,60 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    main_ []
+    main_ [class (darkMode model)]
         [
             Html.node "link" [ Html.Attributes.rel "stylesheet", Html.Attributes.href "style.css" ] []
             , Html.node "link" [ Html.Attributes.rel "stylesheet", Html.Attributes.href "https://fonts.googleapis.com/css?family=Karla&display=swap" ] []
-            , h1 [] [text "Posts"]
-            , renderPosts model.posts
+            , header [class "header"] [
+                h1 [class "large"] [text "Posts"]
+              , img [src (sunriseSVG model), onClick DarkMode] []
+            ]
+            , renderPosts model.zone model.posts
             , footer [class "footer"] [
-                  input [type_ "text",  onInput Draft, value model.draft] []
-                , button [class "fab", type_ "submit", onClick Send] [text "post"]
+                  textarea [class "draft", autofocus True, onInput Draft, style "margin-bottom" (heightStyle model) , value model.draft] []
+                , button [class "fab", type_ "submit", style "margin-bottom" (heightStyle model), onClick Send] [text "post"]
             ]
         ]
 
 
-prettyTime : Time.Posix -> String
-prettyTime time = time |> Time.posixToMillis |> String.fromInt
+prettyTime : Time.Zone -> Time.Posix -> String
+prettyTime zone time =
+  let
+    japan = Time.toWeekday zone time |> toJapaneseWeekday
+    day = Time.toDay zone time |> String.fromInt
+  in
+    day ++ " " ++ japan
 
-renderPosts : List Post -> Html Msg
-renderPosts posts =
+myWeekday : Model -> Time.Posix -> Time.Weekday
+myWeekday model = Time.toWeekday model.zone
+
+darkMode : Model -> String
+darkMode model = if model.dark then "dark" else ""
+
+sunriseSVG : Model -> String
+sunriseSVG  model = if model.dark then "sunrise-white.svg" else "sunrise.svg"
+
+heightStyle : Model -> String
+heightStyle model = (String.fromInt (model.height // 3) ++ "px")
+
+toJapaneseWeekday : Time.Weekday -> String
+toJapaneseWeekday weekday =
+  case weekday of
+    Time.Mon -> "月"
+    Time.Tue -> "火"
+    Time.Wed -> "水"
+    Time.Thu -> "木"
+    Time.Fri -> "金"
+    Time.Sat -> "土"
+    Time.Sun -> "日"
+
+renderPosts : Time.Zone -> List Post -> Html Msg
+renderPosts zone posts =
     posts |> List.map (\p ->
       div [ class "post"] [
         div [class "post__header"] [text p.text]
         , div [class "post__footer"] [
-            span [] [text (String.fromInt p.count)]
-            , text " - "
-            , span [] [text (prettyTime p.time)]
+             span [] [text (prettyTime zone p.time)]
           ]
         ]) |> div [class "posts"]
 
