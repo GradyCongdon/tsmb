@@ -38,6 +38,11 @@ main.dark,
 
 .dark .fab {
   background: var(--fg);
+  color: var(--bg);
+}
+
+.dark .fab:hover {
+  border-color: var(--bg);
 }
 
 h1 {

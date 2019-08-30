@@ -36,7 +36,7 @@ init _ =
   ({
       draft = ""
     , height = 0
-    , dark = False
+    , dark = True
     , posts = [emptyPost]
     , count = 1
     , time = Time.millisToPosix 0
