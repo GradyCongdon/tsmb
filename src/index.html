@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Main</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      re="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Karla&display=swap"
+    />
+  </head>
+
+  <body>
+    <main id="elm"></main>
+
+    <script src="/elm.js"></script>
+    <script>
+      var app = Elm.Main.init({
+        node: document.getElementById('elm'),
+      });
+      app.ports.cache.subscribe(function(data) {
+        localStorage.setItem('cache', JSON.stringify(data));
+      });
+    </script>
+  </body>
+</html>

@@ -1,10 +1,16 @@
+port module Main exposing (..)
+
 import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
 import Time
 import Task
+import Json.Encode as E
 import Debug
+
+
+port cache : E.Value -> Cmd msg
 
 main = Browser.element
   { init = init
@@ -57,21 +63,22 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         Send ->
-            if model.draft /= "" then
               let
+                draft = String.trim(model.draft)
                 post = {
                     count = model.count
                   , time = model.time
-                  , text = model.draft
+                  , text = draft
                   , favorite = False
                   }
               in
+                if draft == "" then
+                  (model , Cmd.none)
+                else
                 (
                   { model | posts = post :: model.posts, draft = "", count = model.count + 1, height = 0 }
                   , Cmd.none
                 )
-            else
-              (model , Cmd.none)
 
         Draft draft ->
             ({ model | draft = draft, height = String.length draft }, Cmd.none)
@@ -95,17 +102,15 @@ view : Model -> Html Msg
 view model =
     main_ [class (darkMode model)]
         [
-            Html.node "link" [ Html.Attributes.rel "stylesheet", Html.Attributes.href "style.css" ] []
-            , Html.node "link" [ Html.Attributes.rel "stylesheet", Html.Attributes.href "https://fonts.googleapis.com/css?family=Karla&display=swap" ] []
-            , header [class "header"] [
-                h1 [class "large"] [text "Posts"]
-              , img [src (sunriseSVG model), onClick DarkMode] []
-            ]
-            , renderPosts model.zone model.posts
-            , footer [class "footer"] [
-                  textarea [class "draft", autofocus True, onInput Draft, style "margin-bottom" (heightStyle model) , value model.draft] []
-                , button [class "fab", type_ "submit", style "margin-bottom" (heightStyle model), onClick Send] [text "post"]
-            ]
+          header [class "header"] [
+              h1 [class "large"] [text "Posts"]
+            , img [src (sunriseSVG model), onClick DarkMode] []
+          ]
+          , renderPosts model.zone model.posts
+          , footer [class "footer"] [
+                textarea [class "draft", autofocus True, onInput Draft, style "margin-bottom" (heightStyle model) , value model.draft] []
+              , button [class "fab", type_ "submit", style "margin-bottom" (heightStyle model), onClick Send] [text "post"]
+          ]
         ]
 
 
