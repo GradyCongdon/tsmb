@@ -100,7 +100,7 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    main_ [class (darkMode model)]
+    div [class (darkMode model)]
         [
           header [class "header"] [
               h1 [class "large"] [text "Posts"]
