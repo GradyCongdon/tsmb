@@ -1,16 +1,13 @@
-port module Main exposing (..)
-
 import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
+import Json.Encode as E
+import Json.Decode as D
+import Http
 import Time
 import Task
-import Json.Encode as E
-import Debug
 
-
-port cache : E.Value -> Cmd msg
 
 main = Browser.element
   { init = init
@@ -27,6 +24,7 @@ type alias Model =
   , height: Int
   , time: Time.Posix
   , zone: Time.Zone
+  , loading: Bool
   }
 
 type alias Post = {
@@ -36,6 +34,34 @@ type alias Post = {
   favorite: Bool
   }
 
+type alias Posts = List Post
+
+posixDecoder : D.Decoder Time.Posix
+posixDecoder =
+   D.map (\n -> n |> round |> Time.millisToPosix)
+       D.float
+
+postDecoder : D.Decoder Post
+postDecoder =
+    D.map4
+        Post
+        (D.field "time" posixDecoder)
+        (D.field "count" D.int)
+        (D.field "text" D.string)
+        (D.field "favorite" D.bool)
+
+
+postsDecoder : D.Decoder Posts
+postsDecoder =
+    D.field "posts" (D.list postDecoder)
+
+getHTTPInit : Cmd Msg
+getHTTPInit  =
+  Debug.log("ok")
+  Http.get
+    { url = "/api"
+    , expect = Http.expectJson GotPosts postsDecoder
+    }
 
 init : () -> (Model, Cmd Msg)
 init _ =
@@ -47,8 +73,9 @@ init _ =
     , count = 1
     , time = Time.millisToPosix 0
     , zone = Time.utc
+    , loading = False
     }
-    , Task.perform AdjustTimeZone Time.here
+    , Cmd.batch [Task.perform AdjustTimeZone Time.here, getHTTPInit]
   )
 
 type Msg
@@ -57,6 +84,7 @@ type Msg
     | Tick Time.Posix
     | AdjustTimeZone Time.Zone
     | DarkMode
+    | GotPosts (Result Http.Error (List Post))
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -92,6 +120,33 @@ update msg model =
         DarkMode ->
             ({ model | dark = not model.dark}, Cmd.none)
 
+        GotPosts result ->
+          case result of
+            Err e ->
+              ({ model | draft = errorToString e}, Cmd.none)
+            Ok posts ->
+              ({ model | posts = posts}, Cmd.none)
+
+
+errorToString : Http.Error -> String
+errorToString err =
+    case err of
+        Http.Timeout ->
+            "Timeout exceeded"
+
+        Http.NetworkError ->
+            "Network error"
+
+        Http.BadStatus resp ->
+            "Bad status"
+
+        Http.BadBody bb ->
+            Debug.log(bb)
+            "bad bod " ++ bb
+
+        Http.BadUrl url ->
+            "Malformed url: " ++ url
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Time.every 1000 Tick
@@ -100,7 +155,7 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    div [class (darkMode model)]
+    main_ [class (darkMode model)]
         [
           header [class "header"] [
               h1 [class "large"] [text "Posts"]
@@ -114,17 +169,6 @@ view model =
         ]
 
 
-prettyTime : Time.Zone -> Time.Posix -> String
-prettyTime zone time =
-  let
-    japan = Time.toWeekday zone time |> toJapaneseWeekday
-    day = Time.toDay zone time |> String.fromInt
-  in
-    day ++ " " ++ japan
-
-myWeekday : Model -> Time.Posix -> Time.Weekday
-myWeekday model = Time.toWeekday model.zone
-
 darkMode : Model -> String
 darkMode model = if model.dark then "dark" else ""
 
@@ -133,6 +177,39 @@ sunriseSVG  model = if model.dark then "sunrise-white.svg" else "sunrise.svg"
 
 heightStyle : Model -> String
 heightStyle model = (String.fromInt (model.height // 3) ++ "px")
+
+
+prettyTime : Time.Zone -> Time.Posix -> String
+prettyTime zone time =
+  let
+    japan = Time.toWeekday zone time |> toJapaneseWeekday
+  in
+    japan
+
+mdy : Time.Zone -> Time.Posix -> String
+mdy zone time =
+  let
+    month = Time.toMonth zone time |> toMonth
+    day = Time.toDay zone time |> String.fromInt
+    year = Time.toYear zone time |> String.fromInt
+  in
+    month ++ " " ++ day ++  " " ++ year
+
+toMonth: Time.Month -> String
+toMonth month =
+  case month of
+    Time.Jan -> "january"
+    Time.Feb -> "february"
+    Time.Mar -> "march"
+    Time.Apr -> "april"
+    Time.May -> "may"
+    Time.Jun -> "june"
+    Time.Jul -> "july"
+    Time.Aug -> "august"
+    Time.Sep -> "september"
+    Time.Oct -> "oktober"
+    Time.Nov -> "november"
+    Time.Dec -> "december"
 
 toJapaneseWeekday : Time.Weekday -> String
 toJapaneseWeekday weekday =
@@ -151,7 +228,7 @@ renderPosts zone posts =
       div [ class "post"] [
         div [class "post__header"] [text p.text]
         , div [class "post__footer"] [
-             span [] [text (prettyTime zone p.time)]
+             span [title (mdy zone p.time)] [text (prettyTime zone p.time)]
           ]
         ]) |> div [class "posts"]
 
