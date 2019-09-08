@@ -25,13 +25,34 @@ type alias Model =
   , time: Time.Posix
   , zone: Time.Zone
   , loading: Bool
+  , user: String
   }
 
-type alias Post = {
-  time: Time.Posix,
-  count: Int,
-  text: String,
-  favorite: Bool
+init : () -> (Model, Cmd Msg)
+init _ =
+  let
+    model =
+      { draft = ""
+      , height = 0
+      , dark = False
+      , posts = [emptyPost]
+      , count = 1
+      , time = Time.millisToPosix 0
+      , zone = Time.utc
+      , loading = False
+      , user = "grady"
+      }
+  in
+  (
+    model
+    , Cmd.batch [Task.perform AdjustTimeZone Time.here, getPosts model]
+  )
+
+type alias Post =
+  { count: Int
+  , favorite: Bool
+  , text: String
+  , time: Time.Posix
   }
 
 type alias Posts = List Post
@@ -41,42 +62,56 @@ posixDecoder =
    D.map (\n -> n |> round |> Time.millisToPosix)
        D.float
 
+
 postDecoder : D.Decoder Post
 postDecoder =
     D.map4
         Post
-        (D.field "time" posixDecoder)
         (D.field "count" D.int)
-        (D.field "text" D.string)
         (D.field "favorite" D.bool)
+        (D.field "text" D.string)
+        (D.field "time" posixDecoder)
 
 
 postsDecoder : D.Decoder Posts
 postsDecoder =
     D.field "posts" (D.list postDecoder)
 
-getHTTPInit : Cmd Msg
-getHTTPInit  =
-  Debug.log("ok")
+userEncode : String -> E.Value
+userEncode user = E.object [("user", E.string user)]
+
+postsEncode : Model -> E.Value
+postsEncode model =
+  let
+    -- posts = List.map postEncode model.posts
+    posts = E.list postEncode model.posts
+  in
+    E.object [ ("posts", posts) ]
+
+postEncode : Post -> E.Value
+postEncode post =
+  E.object
+  [ ( "count", E.int post.count)
+  , ( "favorite", E.bool post.favorite)
+  , ( "text", E.string post.text )
+  , ( "time", E.int (Time.posixToMillis post.time) )
+  ]
+
+getPosts : Model -> Cmd Msg
+getPosts model =
   Http.get
-    { url = "/api"
+    { url = "/user/" ++ model.user
     , expect = Http.expectJson GotPosts postsDecoder
     }
 
-init : () -> (Model, Cmd Msg)
-init _ =
-  ({
-      draft = ""
-    , height = 0
-    , dark = True
-    , posts = [emptyPost]
-    , count = 1
-    , time = Time.millisToPosix 0
-    , zone = Time.utc
-    , loading = False
+sendPosts : Model -> Cmd Msg
+sendPosts model  =
+  Http.post
+    { url = "/user/" ++ model.user
+    , body = Http.jsonBody (postsEncode model)
+    , expect = Http.expectJson GotPosts postsDecoder
     }
-    , Cmd.batch [Task.perform AdjustTimeZone Time.here, getHTTPInit]
-  )
+
 
 type Msg
     = Draft String
@@ -99,13 +134,14 @@ update msg model =
                   , text = draft
                   , favorite = False
                   }
+                newModel = { model | posts = post :: model.posts, draft = "", count = model.count + 1, height = 0 }
               in
                 if draft == "" then
                   (model , Cmd.none)
                 else
                 (
-                  { model | posts = post :: model.posts, draft = "", count = model.count + 1, height = 0 }
-                  , Cmd.none
+                  newModel
+                  , sendPosts newModel
                 )
 
         Draft draft ->
@@ -235,9 +271,9 @@ renderPosts zone posts =
 
 
 emptyPost : Post
-emptyPost = {
-    time = Time.millisToPosix 0
-  , count = 0
-  , text = "hi"
+emptyPost =
+  { count = 0
   , favorite = False
+  , text = "hi"
+  ,  time = Time.millisToPosix 0
   }

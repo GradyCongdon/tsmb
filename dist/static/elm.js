@@ -4552,7 +4552,7 @@ var author$project$Main$GotPosts = function (a) {
 	return {$: 'GotPosts', a: a};
 };
 var author$project$Main$Post = F4(
-	function (time, count, text, favorite) {
+	function (count, favorite, text, time) {
 		return {count: count, favorite: favorite, text: text, time: time};
 	});
 var elm$core$Basics$apR = F2(
@@ -5047,16 +5047,15 @@ var elm$json$Json$Decode$string = _Json_decodeString;
 var author$project$Main$postDecoder = A5(
 	elm$json$Json$Decode$map4,
 	author$project$Main$Post,
-	A2(elm$json$Json$Decode$field, 'time', author$project$Main$posixDecoder),
 	A2(elm$json$Json$Decode$field, 'count', elm$json$Json$Decode$int),
+	A2(elm$json$Json$Decode$field, 'favorite', elm$json$Json$Decode$bool),
 	A2(elm$json$Json$Decode$field, 'text', elm$json$Json$Decode$string),
-	A2(elm$json$Json$Decode$field, 'favorite', elm$json$Json$Decode$bool));
+	A2(elm$json$Json$Decode$field, 'time', author$project$Main$posixDecoder));
 var elm$json$Json$Decode$list = _Json_decodeList;
 var author$project$Main$postsDecoder = A2(
 	elm$json$Json$Decode$field,
 	'posts',
 	elm$json$Json$Decode$list(author$project$Main$postDecoder));
-var elm$core$Debug$log = _Debug_log;
 var elm$core$Result$mapError = F2(
 	function (f, result) {
 		if (result.$ === 'Ok') {
@@ -5935,14 +5934,13 @@ var elm$http$Http$get = function (r) {
 	return elm$http$Http$request(
 		{body: elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: elm$core$Maybe$Nothing, tracker: elm$core$Maybe$Nothing, url: r.url});
 };
-var author$project$Main$getHTTPInit = A3(
-	elm$core$Debug$log,
-	'ok',
-	elm$http$Http$get,
-	{
-		expect: A2(elm$http$Http$expectJson, author$project$Main$GotPosts, author$project$Main$postsDecoder),
-		url: '/api'
-	});
+var author$project$Main$getPosts = function (model) {
+	return elm$http$Http$get(
+		{
+			expect: A2(elm$http$Http$expectJson, author$project$Main$GotPosts, author$project$Main$postsDecoder),
+			url: '/user/' + model.user
+		});
+};
 var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Task$Perform = function (a) {
 	return {$: 'Perform', a: a};
@@ -6026,23 +6024,25 @@ var elm$time$Time$customZone = elm$time$Time$Zone;
 var elm$time$Time$here = _Time_here(_Utils_Tuple0);
 var elm$time$Time$utc = A2(elm$time$Time$Zone, 0, _List_Nil);
 var author$project$Main$init = function (_n0) {
+	var model = {
+		count: 1,
+		dark: false,
+		draft: '',
+		height: 0,
+		loading: false,
+		posts: _List_fromArray(
+			[author$project$Main$emptyPost]),
+		time: elm$time$Time$millisToPosix(0),
+		user: 'grady',
+		zone: elm$time$Time$utc
+	};
 	return _Utils_Tuple2(
-		{
-			count: 1,
-			dark: true,
-			draft: '',
-			height: 0,
-			loading: false,
-			posts: _List_fromArray(
-				[author$project$Main$emptyPost]),
-			time: elm$time$Time$millisToPosix(0),
-			zone: elm$time$Time$utc
-		},
+		model,
 		elm$core$Platform$Cmd$batch(
 			_List_fromArray(
 				[
 					A2(elm$core$Task$perform, author$project$Main$AdjustTimeZone, elm$time$Time$here),
-					author$project$Main$getHTTPInit
+					author$project$Main$getPosts(model)
 				])));
 };
 var author$project$Main$Tick = function (a) {
@@ -6306,6 +6306,7 @@ var elm$time$Time$every = F2(
 var author$project$Main$subscriptions = function (model) {
 	return A2(elm$time$Time$every, 1000, author$project$Main$Tick);
 };
+var elm$core$Debug$log = _Debug_log;
 var author$project$Main$errorToString = function (err) {
 	switch (err.$) {
 		case 'Timeout':
@@ -6325,6 +6326,81 @@ var author$project$Main$errorToString = function (err) {
 			return 'Malformed url: ' + url;
 	}
 };
+var elm$json$Json$Encode$bool = _Json_wrap;
+var elm$json$Json$Encode$int = _Json_wrap;
+var elm$json$Json$Encode$object = function (pairs) {
+	return _Json_wrap(
+		A3(
+			elm$core$List$foldl,
+			F2(
+				function (_n0, obj) {
+					var k = _n0.a;
+					var v = _n0.b;
+					return A3(_Json_addField, k, v, obj);
+				}),
+			_Json_emptyObject(_Utils_Tuple0),
+			pairs));
+};
+var elm$json$Json$Encode$string = _Json_wrap;
+var elm$time$Time$posixToMillis = function (_n0) {
+	var millis = _n0.a;
+	return millis;
+};
+var author$project$Main$postEncode = function (post) {
+	return elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'count',
+				elm$json$Json$Encode$int(post.count)),
+				_Utils_Tuple2(
+				'favorite',
+				elm$json$Json$Encode$bool(post.favorite)),
+				_Utils_Tuple2(
+				'text',
+				elm$json$Json$Encode$string(post.text)),
+				_Utils_Tuple2(
+				'time',
+				elm$json$Json$Encode$int(
+					elm$time$Time$posixToMillis(post.time)))
+			]));
+};
+var elm$json$Json$Encode$list = F2(
+	function (func, entries) {
+		return _Json_wrap(
+			A3(
+				elm$core$List$foldl,
+				_Json_addEntry(func),
+				_Json_emptyArray(_Utils_Tuple0),
+				entries));
+	});
+var author$project$Main$postsEncode = function (model) {
+	var posts = A2(elm$json$Json$Encode$list, author$project$Main$postEncode, model.posts);
+	return elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2('posts', posts)
+			]));
+};
+var elm$http$Http$jsonBody = function (value) {
+	return A2(
+		_Http_pair,
+		'application/json',
+		A2(elm$json$Json$Encode$encode, 0, value));
+};
+var elm$http$Http$post = function (r) {
+	return elm$http$Http$request(
+		{body: r.body, expect: r.expect, headers: _List_Nil, method: 'POST', timeout: elm$core$Maybe$Nothing, tracker: elm$core$Maybe$Nothing, url: r.url});
+};
+var author$project$Main$sendPosts = function (model) {
+	return elm$http$Http$post(
+		{
+			body: elm$http$Http$jsonBody(
+				author$project$Main$postsEncode(model)),
+			expect: A2(elm$http$Http$expectJson, author$project$Main$GotPosts, author$project$Main$postsDecoder),
+			url: '/user/' + model.user
+		});
+};
 var elm$core$Basics$not = _Basics_not;
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var elm$core$String$length = _String_length;
@@ -6335,16 +6411,17 @@ var author$project$Main$update = F2(
 			case 'Send':
 				var draft = elm$core$String$trim(model.draft);
 				var post = {count: model.count, favorite: false, text: draft, time: model.time};
+				var newModel = _Utils_update(
+					model,
+					{
+						count: model.count + 1,
+						draft: '',
+						height: 0,
+						posts: A2(elm$core$List$cons, post, model.posts)
+					});
 				return (draft === '') ? _Utils_Tuple2(model, elm$core$Platform$Cmd$none) : _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							count: model.count + 1,
-							draft: '',
-							height: 0,
-							posts: A2(elm$core$List$cons, post, model.posts)
-						}),
-					elm$core$Platform$Cmd$none);
+					newModel,
+					author$project$Main$sendPosts(newModel));
 			case 'Draft':
 				var draft = msg.a;
 				return _Utils_Tuple2(
@@ -6439,10 +6516,6 @@ var elm$time$Time$flooredDiv = F2(
 	function (numerator, denominator) {
 		return elm$core$Basics$floor(numerator / denominator);
 	});
-var elm$time$Time$posixToMillis = function (_n0) {
-	var millis = _n0.a;
-	return millis;
-};
 var elm$time$Time$toAdjustedMinutesHelp = F3(
 	function (defaultOffset, posixMinutes, eras) {
 		toAdjustedMinutesHelp:
@@ -6637,7 +6710,6 @@ var elm$html$Html$div = _VirtualDom_node('div');
 var elm$html$Html$span = _VirtualDom_node('span');
 var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
-var elm$json$Json$Encode$string = _Json_wrap;
 var elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
 		return A2(
@@ -6711,7 +6783,6 @@ var elm$html$Html$header = _VirtualDom_node('header');
 var elm$html$Html$img = _VirtualDom_node('img');
 var elm$html$Html$main_ = _VirtualDom_node('main');
 var elm$html$Html$textarea = _VirtualDom_node('textarea');
-var elm$json$Json$Encode$bool = _Json_wrap;
 var elm$html$Html$Attributes$boolProperty = F2(
 	function (key, bool) {
 		return A2(
