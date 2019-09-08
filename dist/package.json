@@ -13,6 +13,7 @@
     "body-parser": "^1.19.0",
     "koa": "^2.8.1",
     "koa-router": "^7.4.0",
-    "koa-static-server": "^1.4.0"
+    "koa-static-server": "^1.4.0",
+    "mongodb": "^3.3.2"
   }
 }
