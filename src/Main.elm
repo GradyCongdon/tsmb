@@ -198,8 +198,8 @@ view model =
             , img [src (sunriseSVG model), onClick DarkMode] []
           ]
           , renderPosts model.zone model.posts
-          , footer [class "footer"] [
-                textarea [class "draft", autofocus True, onInput Draft, style "margin-bottom" (heightStyle model) , value model.draft] []
+          , footer [class "footer", style "bottom" (heightStyle model)] [
+                textarea [class "draft", autofocus True, onInput Draft, value model.draft] []
               , button [class "fab", type_ "submit", style "margin-bottom" (heightStyle model), onClick Send] [text "post"]
           ]
         ]

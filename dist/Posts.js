@@ -32,7 +32,7 @@ async function getUserPostsLocal(user) {
   try {
     body = saved[user];
     if (!body) {
-      body = await makeUserPosts(user);
+      body = makeKoanPosts(user);
     }
   } catch (e) {}
   return body;
@@ -43,42 +43,52 @@ async function saveUserPostsLocal(user, posts) {
   return saved[user];
 }
 
-async function makeUserPosts(user) {
+async function initUserPosts(user) {
   if (mongo.active) {
     return await mongo.init(user);
   } else {
-    return initUserPosts(user);
+    return makeKoanPosts();
   }
 }
 
-function initUserPosts(user) {
-  let posts = makePosts();
-  posts.posts = posts.posts.map(p => {
-    p.text = `${user} ${p.text}`;
-    return p;
-  });
-  return posts;
+function buildKoans() {
+  const koans = [
+    'What is your original face before you were born?',
+    'When you can do nothing, what can you do?',
+    'If you call this a short staff, you oppose its reality. If you do not call it a short staff, you ignore the fact. Now what do you wish to call this?',
+    'A broken mirror never reflects again; fallen flowers never go back to the old branches',
+    'The world is vast and wide. Why do you put on your robes at the sound of a bell?',
+    'Out of nowhere, the mind comes forth',
+    'To conceive of ourselves as fragmentary matter cohering for a millisecond between two eternities of darkness is very difficult',
+  ];
+  let start = Math.floor(Math.random() * (koans.length - 1));
+  return function() {
+    i = start % (koans.length - 1);
+    start = start + 1;
+    return koans[i];
+  };
 }
 
-function makePosts() {
+function makeKoanPosts() {
+  const getKoan = buildKoans();
   const a = {
     time: Date.now(),
     count: 1,
-    text: 'un',
+    text: getKoan(),
     favorite: false,
   };
 
   const b = {
     time: Date.now(),
     count: 2,
-    text: 'du',
+    text: getKoan(),
     favorite: false,
   };
 
   const c = {
     time: Date.now(),
     count: 3,
-    text: 'trois',
+    text: getKoan(),
     favorite: false,
   };
   return {

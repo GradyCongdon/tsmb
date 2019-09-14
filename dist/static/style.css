@@ -20,11 +20,12 @@ body {
   background-color: var(--bg);
   color: var(--cove);
   height: 100vh;
+  overscroll-behavior: none;
 }
 
 main {
-  height: 100%;
-  padding-bottom: 25vh;
+  min-height: 100vh;
+  padding-bottom: 18vh;
 }
 
 main > * {
@@ -37,7 +38,7 @@ main,
 .draft,
 .fab {
   transition: background-color 0.55s linear, color 0.55s linear,
-    border-color 0.55s linear, box-shadow 0.55s linear, color 0.55s linear;
+    border-color 0.55s linear, box-shadow 0.55s linear, color 0.25s linear;
 }
 
 main.dark,
@@ -102,6 +103,8 @@ h1 {
   color: var(--fg);
   resize: none;
   overflow: hidden;
+
+  line-height: 1.15;
 }
 .draft:focus {
   appearance: none;
@@ -145,22 +148,30 @@ h1 {
   display: flex;
   flex-direction: column;
   font-size: var(--post-size);
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
+  line-height: 1.15;
 }
 
 .post__header {
-  padding: 1rem;
-  padding-bottom: 0;
-  word-break: break-all;
+  padding: 0;
 }
 
 .post__footer {
   display: block;
   width: 100%;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  padding-top: 1.25rem;
-  padding-bottom: 0.75rem;
   border-radius: 0.25rem;
   font-size: 0.85rem;
   text-align: right;
+  margin-top: 1.25rem;
+}
+
+/* must be kept seperate */
+::selection {
+  background: var(--rome);
+}
+::-moz-selection {
+  background: var(--rome);
 }

@@ -6892,7 +6892,11 @@ var author$project$Main$view = function (model) {
 				elm$html$Html$footer,
 				_List_fromArray(
 					[
-						elm$html$Html$Attributes$class('footer')
+						elm$html$Html$Attributes$class('footer'),
+						A2(
+						elm$html$Html$Attributes$style,
+						'bottom',
+						author$project$Main$heightStyle(model))
 					]),
 				_List_fromArray(
 					[
@@ -6903,10 +6907,6 @@ var author$project$Main$view = function (model) {
 								elm$html$Html$Attributes$class('draft'),
 								elm$html$Html$Attributes$autofocus(true),
 								elm$html$Html$Events$onInput(author$project$Main$Draft),
-								A2(
-								elm$html$Html$Attributes$style,
-								'margin-bottom',
-								author$project$Main$heightStyle(model)),
 								elm$html$Html$Attributes$value(model.draft)
 							]),
 						_List_Nil),
