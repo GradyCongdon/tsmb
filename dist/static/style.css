@@ -32,6 +32,14 @@ main > * {
   padding-right: 1rem;
 }
 
+main,
+.post,
+.draft,
+.fab {
+  transition: background-color 0.55s linear, color 0.55s linear,
+    border-color 0.55s linear, box-shadow 0.55s linear, color 0.55s linear;
+}
+
 main.dark,
 .dark .post,
 .dark .draft,
@@ -39,11 +47,8 @@ main.dark,
   background-color: var(--fg);
   color: var(--bg);
   border-color: var(--bg);
-  transition: background-color 0.55s linear, color 0.55s linear,
-    border-color 0.55s linear;
 }
 .dark .draft {
-  transition: box-shadow 0.55s linear, color 0.55s linear;
   box-shadow: 0 0 1rem 4rem rgba(100, 126, 187, 0.95);
 }
 
