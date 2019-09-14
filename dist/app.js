@@ -23,16 +23,16 @@ console.log('on port 3k');
 router.get('/user/:user', async ctx => {
   const user = ctx.params.user;
   if (!user) throw new Error('no user');
-  ctx.body = Posts.getUserPosts(user);
+  ctx.body = await Posts.getUserPosts(user);
 });
 
 router.post('/user/:user', koaBody(), async ctx => {
   const user = ctx.params.user;
   if (!user) throw new Error('no user');
-  const posts = ctx.body;
-  ctx.body = Posts.saveUserPosts(user, posts);
+  const posts = ctx.request.body;
+  ctx.body = await Posts.saveUserPosts(user, posts);
 });
 
 router.get('/tsmb-init', async ctx => {
-  ctx.body = Posts.initUserPosts();
+  ctx.body = await Posts.initUserPosts();
 });

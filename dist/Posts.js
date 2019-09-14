@@ -1,19 +1,30 @@
 const mongo = require('./mongo.js');
 
 async function getUserPosts(user) {
+  let posts;
+  let from;
   if (mongo.active) {
-    return mongo.getUserPosts(user);
+    from = 'mongo';
+    posts = await mongo.getUserPosts(user);
   } else {
-    return getUserPostsLocal(user);
+    from = 'local';
+    posts = await getUserPostsLocal(user);
   }
+  console.log(from, posts);
+  return posts;
 }
 
 async function saveUserPosts(user, posts) {
+  let from;
   if (mongo.active) {
-    return saveUserPosts(user, posts);
+    from = 'mongo';
+    posts = await saveUserPosts(user, posts);
   } else {
-    return saveUserPostsLocal(user, posts);
+    from = 'local';
+    posts = await saveUserPostsLocal(user, posts);
   }
+  console.log(from);
+  return posts;
 }
 
 let saved = {};
@@ -21,7 +32,7 @@ async function getUserPostsLocal(user) {
   try {
     body = saved[user];
     if (!body) {
-      body = getPosts();
+      body = await makeUserPosts(user);
     }
   } catch (e) {}
   return body;
@@ -32,15 +43,15 @@ async function saveUserPostsLocal(user, posts) {
   return saved[user];
 }
 
-function makeUserPosts(user) {
+async function makeUserPosts(user) {
   if (mongo.active) {
-    return mongo.init();
+    return await mongo.init(user);
   } else {
-    return init();
+    return initUserPosts(user);
   }
 }
 
-function initUserPosts() {
+function initUserPosts(user) {
   let posts = makePosts();
   posts.posts = posts.posts.map(p => {
     p.text = `${user} ${p.text}`;

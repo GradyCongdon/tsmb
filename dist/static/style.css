@@ -24,7 +24,12 @@ body {
 
 main {
   height: 100%;
-  padding: 1em;
+  padding-bottom: 25vh;
+}
+
+main > * {
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
 main.dark,
@@ -34,6 +39,12 @@ main.dark,
   background-color: var(--fg);
   color: var(--bg);
   border-color: var(--bg);
+  transition: background-color 0.55s linear, color 0.55s linear,
+    border-color 0.55s linear;
+}
+.dark .draft {
+  transition: box-shadow 0.55s linear, color 0.55s linear;
+  box-shadow: 0 0 1rem 4rem rgba(100, 126, 187, 0.95);
 }
 
 .dark .fab {
@@ -53,19 +64,28 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  height: 65px;
+  padding: 1rem;
 }
+
 .header img {
   width: 34.5px;
   height: 30.75px;
 }
 
-.draft {
-  position: fixed;
-  bottom: -4rem;
-  height: 6rem;
-  width: calc(100vw - 4rem);
-
+.footer {
   display: flex;
+  position: fixed;
+  width: 100vw;
+  height: 65px;
+  bottom: 0;
+}
+
+.draft {
+  box-shadow: 0 0 1rem 4rem rgba(255, 255, 255, 0.95);
+  width: calc(100vw - 4rem);
+  height: 5rem;
+
   padding: 1rem;
 
   border: 1px solid var(--fg);
@@ -107,6 +127,9 @@ h1 {
 
 .posts .post {
   margin: 1rem 0;
+}
+.post:first-child {
+  margin-top: 0;
 }
 
 .post {
