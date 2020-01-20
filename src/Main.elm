@@ -26,6 +26,7 @@ type alias Model =
   , zone: Time.Zone
   , loading: Bool
   , user: String
+  , url: String
   }
 
 init : () -> (Model, Cmd Msg)
@@ -41,6 +42,7 @@ init _ =
       , zone = Time.utc
       , loading = False
       , user = "grady"
+      , url = "localhost:3000"
       }
   in
   (
@@ -56,6 +58,14 @@ type alias Post =
   }
 
 type alias Posts = List Post
+
+emptyPost : Post
+emptyPost =
+  { count = 0
+  , favorite = False
+  , text = "hi"
+  ,  time = Time.millisToPosix 0
+  }
 
 posixDecoder : D.Decoder Time.Posix
 posixDecoder =
@@ -100,14 +110,14 @@ postEncode post =
 getPosts : Model -> Cmd Msg
 getPosts model =
   Http.get
-    { url = "/user/" ++ model.user
+    { url = model.url ++ "/user/" ++ model.user
     , expect = Http.expectJson GotPosts postsDecoder
     }
 
 sendPosts : Model -> Cmd Msg
 sendPosts model  =
   Http.post
-    { url = "/user/" ++ model.user
+    { url = model.url ++ "/user/" ++ model.user
     , body = Http.jsonBody (postsEncode model)
     , expect = Http.expectJson GotPosts postsDecoder
     }
@@ -134,15 +144,17 @@ update msg model =
                   , text = draft
                   , favorite = False
                   }
-                newModel = { model | posts = post :: model.posts, draft = "", count = model.count + 1, height = 0 }
+                newModel =
+                  { model | posts = post :: model.posts
+                  , draft = ""
+                  , count = model.count + 1
+                  , height = 0
+                  }
               in
                 if draft == "" then
                   (model , Cmd.none)
                 else
-                (
-                  newModel
-                  , sendPosts newModel
-                )
+                  (newModel, sendPosts newModel)
 
         Draft draft ->
             ({ model | draft = draft, height = String.length draft }, Cmd.none)
@@ -204,6 +216,16 @@ view model =
           ]
         ]
 
+renderPosts : Time.Zone -> List Post -> Html Msg
+renderPosts zone posts =
+    posts |> List.map (\p ->
+      div [ class "post"] [
+        div [class "post__header"] [text p.text]
+        , div [class "post__footer"] [
+             span [title (mdy zone p.time)] [text (prettyTime zone p.time)]
+          ]
+        ]) |> div [class "posts"]
+
 
 darkMode : Model -> String
 darkMode model = if model.dark then "dark" else ""
@@ -257,23 +279,3 @@ toJapaneseWeekday weekday =
     Time.Fri -> "金"
     Time.Sat -> "土"
     Time.Sun -> "日"
-
-renderPosts : Time.Zone -> List Post -> Html Msg
-renderPosts zone posts =
-    posts |> List.map (\p ->
-      div [ class "post"] [
-        div [class "post__header"] [text p.text]
-        , div [class "post__footer"] [
-             span [title (mdy zone p.time)] [text (prettyTime zone p.time)]
-          ]
-        ]) |> div [class "posts"]
-
-
-
-emptyPost : Post
-emptyPost =
-  { count = 0
-  , favorite = False
-  , text = "hi"
-  ,  time = Time.millisToPosix 0
-  }

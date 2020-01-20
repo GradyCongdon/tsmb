@@ -20,6 +20,12 @@ app.use(async (ctx, next) => {
 app.listen(3000);
 console.log('on port 3k');
 
+router.get('/', async ctx => {
+  const user = ctx.params.user;
+  if (!user) throw new Error('no user');
+  ctx.body = await Posts.getUserPosts(user);
+});
+
 router.get('/user/:user', async ctx => {
   const user = ctx.params.user;
   if (!user) throw new Error('no user');

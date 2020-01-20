@@ -5938,7 +5938,7 @@ var author$project$Main$getPosts = function (model) {
 	return elm$http$Http$get(
 		{
 			expect: A2(elm$http$Http$expectJson, author$project$Main$GotPosts, author$project$Main$postsDecoder),
-			url: '/user/' + model.user
+			url: model.url + ('/user/' + model.user)
 		});
 };
 var elm$core$Platform$Cmd$batch = _Platform_batch;
@@ -6033,6 +6033,7 @@ var author$project$Main$init = function (_n0) {
 		posts: _List_fromArray(
 			[author$project$Main$emptyPost]),
 		time: elm$time$Time$millisToPosix(0),
+		url: 'localhost:3000',
 		user: 'grady',
 		zone: elm$time$Time$utc
 	};
@@ -6398,7 +6399,7 @@ var author$project$Main$sendPosts = function (model) {
 			body: elm$http$Http$jsonBody(
 				author$project$Main$postsEncode(model)),
 			expect: A2(elm$http$Http$expectJson, author$project$Main$GotPosts, author$project$Main$postsDecoder),
-			url: '/user/' + model.user
+			url: model.url + ('/user/' + model.user)
 		});
 };
 var elm$core$Basics$not = _Basics_not;
