@@ -27,6 +27,7 @@ type alias Model =
   , loading: Bool
   , user: String
   , url: String
+  , error: String
   }
 
 init : () -> (Model, Cmd Msg)
@@ -43,6 +44,7 @@ init _ =
       , loading = False
       , user = "grady"
       , url = "localhost:3000"
+      , error = ""
       }
   in
   (
@@ -171,7 +173,8 @@ update msg model =
         GotPosts result ->
           case result of
             Err e ->
-              ({ model | draft = errorToString e}, Cmd.none)
+              (model, Cmd.none)
+              -- ({ model | error = errorToString e}, Cmd.none)
             Ok posts ->
               ({ model | posts = posts}, Cmd.none)
 
@@ -203,16 +206,19 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    main_ [class (darkMode model)]
+    main_ [class "main", class (darkMode model)]
         [
-          header [class "header"] [
-              h1 [class "large"] [text "Posts"]
-            , img [src (sunriseSVG model), onClick DarkMode] []
-          ]
-          , renderPosts model.zone model.posts
-          , footer [class "footer", style "bottom" (heightStyle model)] [
-                textarea [class "draft", autofocus True, onInput Draft, value model.draft] []
-              , button [class "fab", type_ "submit", style "margin-bottom" (heightStyle model), onClick Send] [text "post"]
+          div [class "container"] [
+              div [class "errors"] [text model.error]
+            , header [class "header"] [
+                h1 [class "large"] [text "Posts"]
+              , img [src (sunriseSVG model), onClick DarkMode] []
+            ]
+            , renderPosts model.zone model.posts
+            , footer [class "footer", style "bottom" (heightStyle model)] [
+                  textarea [class "draft", autofocus True, onInput Draft, value model.draft] []
+                , button [class "fab", type_ "submit", onClick Send] [text "post"]
+            ]
           ]
         ]
 
@@ -220,7 +226,7 @@ renderPosts : Time.Zone -> List Post -> Html Msg
 renderPosts zone posts =
     posts |> List.map (\p ->
       div [ class "post"] [
-        div [class "post__header"] [text p.text]
+        pre [class "post__header"] [text p.text]
         , div [class "post__footer"] [
              span [title (mdy zone p.time)] [text (prettyTime zone p.time)]
           ]

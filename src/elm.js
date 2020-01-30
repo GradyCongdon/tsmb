@@ -6028,7 +6028,6 @@ var author$project$Main$init = function (_n0) {
 		count: 1,
 		dark: false,
 		draft: '',
-		error: '',
 		height: 0,
 		loading: false,
 		posts: _List_fromArray(
@@ -6308,6 +6307,26 @@ var elm$time$Time$every = F2(
 var author$project$Main$subscriptions = function (model) {
 	return A2(elm$time$Time$every, 1000, author$project$Main$Tick);
 };
+var elm$core$Debug$log = _Debug_log;
+var author$project$Main$errorToString = function (err) {
+	switch (err.$) {
+		case 'Timeout':
+			return 'Timeout exceeded';
+		case 'NetworkError':
+			return 'Network error';
+		case 'BadStatus':
+			var resp = err.a;
+			return 'Bad status';
+		case 'BadBody':
+			var bb = err.a;
+			return _Utils_ap(
+				A2(elm$core$Debug$log, bb, 'bad bod '),
+				bb);
+		default:
+			var url = err.a;
+			return 'Malformed url: ' + url;
+	}
+};
 var elm$json$Json$Encode$bool = _Json_wrap;
 var elm$json$Json$Encode$int = _Json_wrap;
 var elm$json$Json$Encode$object = function (pairs) {
@@ -6438,7 +6457,13 @@ var author$project$Main$update = F2(
 				var result = msg.a;
 				if (result.$ === 'Err') {
 					var e = result.a;
-					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								draft: author$project$Main$errorToString(e)
+							}),
+						elm$core$Platform$Cmd$none);
 				} else {
 					var posts = result.a;
 					return _Utils_Tuple2(
@@ -6683,7 +6708,6 @@ var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 	}
 };
 var elm$html$Html$div = _VirtualDom_node('div');
-var elm$html$Html$pre = _VirtualDom_node('pre');
 var elm$html$Html$span = _VirtualDom_node('span');
 var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
@@ -6716,7 +6740,7 @@ var author$project$Main$renderPosts = F2(
 						_List_fromArray(
 							[
 								A2(
-								elm$html$Html$pre,
+								elm$html$Html$div,
 								_List_fromArray(
 									[
 										elm$html$Html$Attributes$class('post__header')
@@ -6831,93 +6855,77 @@ var author$project$Main$view = function (model) {
 		elm$html$Html$main_,
 		_List_fromArray(
 			[
-				elm$html$Html$Attributes$class('main'),
 				elm$html$Html$Attributes$class(
 				author$project$Main$darkMode(model))
 			]),
 		_List_fromArray(
 			[
 				A2(
-				elm$html$Html$div,
+				elm$html$Html$header,
 				_List_fromArray(
 					[
-						elm$html$Html$Attributes$class('container')
+						elm$html$Html$Attributes$class('header')
 					]),
 				_List_fromArray(
 					[
 						A2(
-						elm$html$Html$div,
+						elm$html$Html$h1,
 						_List_fromArray(
 							[
-								elm$html$Html$Attributes$class('errors')
+								elm$html$Html$Attributes$class('large')
 							]),
 						_List_fromArray(
 							[
-								elm$html$Html$text(model.error)
+								elm$html$Html$text('Posts')
 							])),
 						A2(
-						elm$html$Html$header,
+						elm$html$Html$img,
 						_List_fromArray(
 							[
-								elm$html$Html$Attributes$class('header')
+								elm$html$Html$Attributes$src(
+								author$project$Main$sunriseSVG(model)),
+								elm$html$Html$Events$onClick(author$project$Main$DarkMode)
 							]),
-						_List_fromArray(
-							[
-								A2(
-								elm$html$Html$h1,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('large')
-									]),
-								_List_fromArray(
-									[
-										elm$html$Html$text('Posts')
-									])),
-								A2(
-								elm$html$Html$img,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$src(
-										author$project$Main$sunriseSVG(model)),
-										elm$html$Html$Events$onClick(author$project$Main$DarkMode)
-									]),
-								_List_Nil)
-							])),
-						A2(author$project$Main$renderPosts, model.zone, model.posts),
+						_List_Nil)
+					])),
+				A2(author$project$Main$renderPosts, model.zone, model.posts),
+				A2(
+				elm$html$Html$footer,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('footer'),
 						A2(
-						elm$html$Html$footer,
+						elm$html$Html$Attributes$style,
+						'bottom',
+						author$project$Main$heightStyle(model))
+					]),
+				_List_fromArray(
+					[
+						A2(
+						elm$html$Html$textarea,
 						_List_fromArray(
 							[
-								elm$html$Html$Attributes$class('footer'),
+								elm$html$Html$Attributes$class('draft'),
+								elm$html$Html$Attributes$autofocus(true),
+								elm$html$Html$Events$onInput(author$project$Main$Draft),
+								elm$html$Html$Attributes$value(model.draft)
+							]),
+						_List_Nil),
+						A2(
+						elm$html$Html$button,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('fab'),
+								elm$html$Html$Attributes$type_('submit'),
 								A2(
 								elm$html$Html$Attributes$style,
-								'bottom',
-								author$project$Main$heightStyle(model))
+								'margin-bottom',
+								author$project$Main$heightStyle(model)),
+								elm$html$Html$Events$onClick(author$project$Main$Send)
 							]),
 						_List_fromArray(
 							[
-								A2(
-								elm$html$Html$textarea,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('draft'),
-										elm$html$Html$Attributes$autofocus(true),
-										elm$html$Html$Events$onInput(author$project$Main$Draft),
-										elm$html$Html$Attributes$value(model.draft)
-									]),
-								_List_Nil),
-								A2(
-								elm$html$Html$button,
-								_List_fromArray(
-									[
-										elm$html$Html$Attributes$class('fab'),
-										elm$html$Html$Attributes$type_('submit'),
-										elm$html$Html$Events$onClick(author$project$Main$Send)
-									]),
-								_List_fromArray(
-									[
-										elm$html$Html$text('post')
-									]))
+								elm$html$Html$text('post')
 							]))
 					]))
 			]));
